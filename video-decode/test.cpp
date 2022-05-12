@@ -82,8 +82,8 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
       // unexpected adjustment
       int reqsz = srch*bstride*3/2;
       int rowoffs = (bufsz-reqsz)/bstride*2/3;
-      int uoffs = rowoffs*bstride;
-      int voffs = (rowoffs+rowoffs/4)*bstride;
+      int uoffs = (rowoffs+rowoffs/4)*bstride;
+      int voffs = rowoffs*bstride;
 
       unsigned char *rawptr = raw + srcw*(srch-1)*4;
       unsigned char *adjptr = adj + srcw*(srch-1)*4;
@@ -96,7 +96,7 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         for (unsigned int x=0; x < srcw; ++x)
         {
           yuv_to_rgb(rawptr+x*4, yptr[x], uptr[x/2], vptr[x/2]);
-          yuv_to_rgb(adjptr+x*4, yptr[x], uptr[x/2+offs], vptr[x/2+offs]);
+          yuv_to_rgb(adjptr+x*4, yptr[x], uptr[x/2+uoffs], vptr[x/2+voffs]);
         }
 
         rawptr -= srcw*4;
@@ -110,7 +110,8 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
       buffer2d->Release();
       buffer->Release();
 
-      SetWindowPos(hwndDlg, NULL, 0, 0, srcw+2*marg, 2*(srch+2*marg), SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
+      //SetWindowPos(hwndDlg, NULL, 0, 0, srcw+2*marg, 2*(srch+2*marg), SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
+      SetWindowPos(hwndDlg, NULL, 0, 0, srcw+2*marg, srch+2*marg, SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
     }
     return 0;
 
@@ -131,10 +132,11 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
       HDC dc = BeginPaint(hwndDlg, &ps);
 
       HDC srcdc = CreateCompatibleDC(dc);
-      SelectObject(srcdc, rawbmp);
-      BitBlt(dc, marg/2, marg/2, srcw, srch, srcdc, 0, 0, SRCCOPY);
+      //SelectObject(srcdc, rawbmp);
+      //BitBlt(dc, marg/2, marg/2, srcw, srch, srcdc, 0, 0, SRCCOPY);
       SelectObject(srcdc, adjbmp);
-      BitBlt(dc, marg/2, (h+marg)/2, srcw, srch, srcdc, 0, 0, SRCCOPY);
+      //BitBlt(dc, marg/2, (h+marg)/2, srcw, srch, srcdc, 0, 0, SRCCOPY);
+      BitBlt(dc, marg/2, marg/2, srcw, srch, srcdc, 0, 0, SRCCOPY);
       EndPaint(hwndDlg, &ps);
       ReleaseDC(hwndDlg, srcdc);
     }
