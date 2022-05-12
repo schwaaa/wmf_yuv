@@ -27,7 +27,7 @@ void yuv_to_rgb(unsigned char *rgb, int y, int u, int v)
 INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
   static HBITMAP rawbmp = NULL, adjbmp=NULL;
-  static unsigned int srcw = 0, srch = 0;
+  static unsigned int srcw, srch, destw, desth;
 
   switch (uMsg)
   {
@@ -51,6 +51,10 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
       MFGetAttributeSize(fmt, MF_MT_FRAME_SIZE, &srcw, &srch);
       fmt->Release();
 
+      const int sc=1;
+      destw=srcw/sc;
+      desth=srch/sc;
+
       IMFSample *sample = NULL;
       DWORD flags=0;
       INT64 readpos=0;
@@ -64,8 +68,8 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
       BITMAPINFO bi = {0};
       bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-      bi.bmiHeader.biWidth = srcw;
-      bi.bmiHeader.biHeight = srch;
+      bi.bmiHeader.biWidth = destw;
+      bi.bmiHeader.biHeight = desth;
       bi.bmiHeader.biPlanes = 1;
       bi.bmiHeader.biBitCount = 32;
       bi.bmiHeader.biCompression = BI_RGB;
@@ -85,32 +89,40 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
       int uoffs = rowoffs*bstride;
       int voffs = (rowoffs+rowoffs/4)*bstride;
 
-      unsigned char *rawptr = raw + srcw*(srch-1)*4;
-      unsigned char *adjptr = adj + srcw*(srch-1)*4;
+      unsigned char *rawptr = raw + destw*(desth-1)*4;
+      unsigned char *adjptr = adj + destw*(desth-1)*4;
       unsigned char *yptr = bptr;
       unsigned char *uptr = bptr + srch*bstride*5/4;
       unsigned char *vptr = bptr + srch*bstride;
 
-      for (unsigned int y=0; y < srch; ++y)
+      for (unsigned int y=0; y < desth; ++y)
       {
-        for (unsigned int x=0; x < srcw; ++x)
+        for (unsigned int x=0; x < destw; ++x)
         {
-          yuv_to_rgb(rawptr+x*4, yptr[x], uptr[x/2], vptr[x/2]);
-          yuv_to_rgb(adjptr+x*4, yptr[x], uptr[x/2+offs], vptr[x/2+offs]);
+          yuv_to_rgb(rawptr+x*4, yptr[sc*x], uptr[sc*x/2], vptr[sc*x/2]);
+          yuv_to_rgb(adjptr+x*4, yptr[sc*x], uptr[sc*x/2+uoffs], vptr[sc*x/2+voffs]);
         }
 
-        rawptr -= srcw*4;
-        adjptr -= srcw*4;
-        yptr += bstride;
-        if (y&1) uptr += bstride/2;
-        if (y&1) vptr += bstride/2;
+        rawptr -= destw*4;
+        adjptr -= destw*4;
+        yptr += sc*bstride;
+        if (sc == 1)
+        {
+          if (y&1) uptr += bstride/2;
+          if (y&1) vptr += bstride/2;
+        }
+        else
+        {
+          uptr += sc/2*bstride/2;
+          vptr += sc/2*bstride/2;
+        }
       }
 
       buffer2d->Unlock2D();
       buffer2d->Release();
       buffer->Release();
 
-      SetWindowPos(hwndDlg, NULL, 0, 0, srcw+2*marg, 2*(srch+2*marg), SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
+      SetWindowPos(hwndDlg, NULL, 0, 0, destw+2*marg, 2*(desth+2*marg), SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
     }
     return 0;
 
@@ -132,9 +144,9 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
       HDC srcdc = CreateCompatibleDC(dc);
       SelectObject(srcdc, rawbmp);
-      BitBlt(dc, marg/2, marg/2, srcw, srch, srcdc, 0, 0, SRCCOPY);
+      BitBlt(dc, marg/2, marg/2, destw, desth, srcdc, 0, 0, SRCCOPY);
       SelectObject(srcdc, adjbmp);
-      BitBlt(dc, marg/2, (h+marg)/2, srcw, srch, srcdc, 0, 0, SRCCOPY);
+      BitBlt(dc, marg/2, (h+marg)/2, destw, desth, srcdc, 0, 0, SRCCOPY);
       EndPaint(hwndDlg, &ps);
       ReleaseDC(hwndDlg, srcdc);
     }
