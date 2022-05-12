@@ -36,7 +36,7 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
       MFStartup(MF_VERSION);
 
       IMFSourceReader *reader = NULL;
-      MFCreateSourceReaderFromURL(L"C:\\Users\\schwa\\Downloads\\test_smpte_420_800x600.mp4", NULL, &reader);
+      MFCreateSourceReaderFromURL(L"test_smpte_420_800x600.mp4", NULL, &reader);
       reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, FALSE);
       reader->SetStreamSelection(MF_SOURCE_READER_FIRST_VIDEO_STREAM, TRUE);
 
