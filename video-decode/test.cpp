@@ -36,7 +36,7 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
       MFStartup(MF_VERSION);
 
       IMFSourceReader *reader = NULL;
-      MFCreateSourceReaderFromURL(L"C:\\Users\\schwa\\Documents\\johnny.mp4", NULL, &reader);
+      MFCreateSourceReaderFromURL(L"C:\\Users\\schwa\\Downloads\\test_smpte_420_800x600.mp4", NULL, &reader);
       reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, FALSE);
       reader->SetStreamSelection(MF_SOURCE_READER_FIRST_VIDEO_STREAM, TRUE);
 
@@ -79,7 +79,11 @@ INT_PTR CALLBACK wndproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
       buffer->QueryInterface(&buffer2d);
       buffer2d->Lock2D(&bptr, &bstride);
 
-      int offs=(bufsz*2/3-srch*bstride); // unexpected
+      // unexpected adjustment
+      int reqsz = srch*bstride*3/2;
+      int rowoffs = (bufsz-reqsz)/bstride*2/3;
+      int uoffs = rowoffs*bstride;
+      int voffs = (rowoffs+rowoffs/4)*bstride;
 
       unsigned char *rawptr = raw + srcw*(srch-1)*4;
       unsigned char *adjptr = adj + srcw*(srch-1)*4;
